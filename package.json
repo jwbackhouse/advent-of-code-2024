@@ -107,7 +107,8 @@
   "private": true,
   "dependencies": {
     "chalk": "latest",
-    "ts-aoc-starter": "1.0.1"
+    "ts-aoc-starter": "1.0.1",
+    "ts-node": "10.9.1"
   },
   "devDependencies": {
     "@nx/workspace": "17.1.3",
