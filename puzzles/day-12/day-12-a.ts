@@ -120,6 +120,7 @@ const getMatch = (group: Array<string>, value: number) => {
 };
 
 const getNextMatch = (group: Array<string>, values: Array<number>) => {
+  console.log('GET NEXT MATCH');
   if (!group.length) {
     return 0;
   }
@@ -147,7 +148,7 @@ const getNextMatch = (group: Array<string>, values: Array<number>) => {
     currentGroup.splice(0, furthestIndex + 1);
     remainingValues.shift();
 
-    // console.log('end of second loop: ', { currentGroup, remainingValues });
+    console.log('GET NEXT MATCH > end: ', { currentGroup, remainingValues });
 
     // getNextMatch(currentGroup, remainingValues);
   }
@@ -166,9 +167,10 @@ const loopTheLoop = (groups: Array<Array<string>>, values: Array<number>) => {
 
   while (remainingGroups.length) {
     const currentGroup = remainingGroups[0];
-    console.log('currentGroup: ', currentGroup, newValues);
+    console.log('LOOP THE LOOP > currentGroup: ', currentGroup, newValues);
     const res = getNextMatch(currentGroup, newValues);
     if (!res) {
+      console.log('no res');
       remainingGroups.shift();
       continue;
     }
