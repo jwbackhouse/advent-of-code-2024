@@ -6,39 +6,62 @@ const getPossibleVariances = (length: number) => {
   let possibleVariances = [];
 
   while (remaining < length) {
-    possibleVariances.push(2 ** remaining);
+    possibleVariances.push(1 + 2 ** remaining);
     remaining++;
   }
 
   return possibleVariances;
 };
 
-const getMatchingIndices = (data: Array<number>) => {
-  console.log('data: ', data);
-  let indices = [];
-  let amendedData = [...data];
+const getMatchingIndices = (data: Array<number>, rowLength: number) => {
+  let indices = [[]];
+  let amendedData = [[...data]];
+  let isRetryNeeded = true;
 
-  const possibleVariances = getPossibleVariances(data.length);
+  const possibleVariances = getPossibleVariances(rowLength);
 
   for (let i = 0; i < data.length; i++) {
-    indices[i] = [];
+    indices.at(-1)[i] = [];
     for (let j = i + 1; j < data.length; j++) {
       const current = data[i];
       const comparator = data[j];
       const diff = current - comparator;
 
-      if (possibleVariances.includes(diff)) {
-        console.log('match', current, comparator, diff);
-        indices[i].push(j);
-        amendedData[i] -= diff;
-      }
       if (!diff) {
-        indices[i].push(j);
+        indices.at(-1)[i].push(j);
       }
     }
   }
 
-  console.log('amendedData', amendedData);
+  while (isRetryNeeded) {
+    for (let i = 0; i < data.length; i++) {
+      indices.at(-1)[i] = [];
+      for (let j = i + 1; j < data.length; j++) {
+        const current = data[i];
+        const comparator = data[j];
+        const diff = current - comparator;
+
+        if (possibleVariances.includes(Math.abs(diff))) {
+          indices.push([...indices.at(-1)]);
+          amendedData.push([...amendedData[0]]);
+          indices.at(-1)[i].push(j);
+          amendedData.at(-1)[i] -= diff;
+
+          isRetryNeeded = j < data.length - 1 ? true : false;
+          // console.log('match After', i, j, indices, amendedData);
+          continue;
+        }
+
+        if (!diff) {
+          indices.at(-1)[i].push(j);
+        }
+        isRetryNeeded = false;
+      }
+    }
+  }
+
+  // console.log('amendedData', amendedData);
+  // console.log('indices end of GMI', indices);
 
   return { indices, amendedData };
 };
@@ -50,7 +73,6 @@ const getValue = (
 ) => {
   for (const index of indices) {
     const potentialMatches = data.slice(0, index + 1);
-    console.log('potentialMatches: ', potentialMatches);
     const confirmSymmetry = potentialMatches.every((value, index) => {
       if (index === 0) {
         return true;
@@ -60,6 +82,12 @@ const getValue = (
     });
 
     if (confirmSymmetry) {
+      // console.log(
+      //   'potentialMatches: ',
+      //   potentialMatches,
+      //   data.length,
+      //   isReverse
+      // );
       const value = potentialMatches.length / 2;
       return isReverse ? data.length - value : value;
     }
@@ -68,17 +96,25 @@ const getValue = (
   return 0;
 };
 
-const checkSymmetry = (data: Array<number>) => {
-  const { indices, amendedData } = getMatchingIndices(data);
-  console.log('indices: ', indices);
+const checkSymmetry = (data: Array<number>, rowLength: number) => {
+  const { indices, amendedData } = getMatchingIndices(data, rowLength);
+  // console.log('indices: ', indices);
+
+  let originalValue: number;
 
   // starting at the start
-  if (indices[0].length) {
-    console.log('start at start');
-    const value = getValue(amendedData, indices[0], false);
-    // console.log('value: ', value);
-
-    if (value) {
+  for (let i = 0; i < indices.length; i++) {
+    const currentIndices = indices[i];
+    const value = getValue(amendedData[i], currentIndices[0], false);
+    if (value && i === 0) {
+      originalValue = value;
+    }
+    if (
+      value &&
+      i !== 0 &&
+      value !== originalValue &&
+      Number.isInteger(value)
+    ) {
       return value;
     }
   }
@@ -87,11 +123,31 @@ const checkSymmetry = (data: Array<number>) => {
   const reversedData = [...data].reverse();
 
   const { indices: reverseIndices, amendedData: reverseAmendedData } =
-    getMatchingIndices(reversedData);
-  console.log('reverseIndices: ', reverseIndices);
-  if (reverseIndices[0].length) {
-    const reverseValue = getValue(reverseAmendedData, reverseIndices[0], true);
-    return reverseValue;
+    getMatchingIndices(reversedData, rowLength);
+  // console.log('reverseIndices: ', reverseAmendedData);
+  for (let i = 0; i < reverseIndices.length; i++) {
+    // console.log('current: ', reverseIndices[i][0].length);
+    if (reverseIndices[i][0].length) {
+      const currentReversedIndices = reverseIndices[i];
+      const reverseValue = getValue(
+        reverseAmendedData[i],
+        currentReversedIndices[0],
+        true
+      );
+
+      if (reverseValue && i === 0) {
+        // console.log('Original: ', reverseValue);
+        originalValue = reverseValue;
+      }
+      if (
+        reverseValue &&
+        i !== 0 &&
+        reverseValue !== originalValue &&
+        Number.isInteger(reverseValue)
+      ) {
+        return reverseValue;
+      }
+    }
   }
 
   return 0;
@@ -102,9 +158,11 @@ const checkRows = (data: Array<Array<string>>) => {
   const rowValues: Array<number> = [];
 
   data.forEach((row: Array<string>) => {
+    // console.log('row: ', row);
     let rowValue = 0;
     row.forEach((value: string, index: number) => {
       if (value === '#') {
+        // console.log('index: ', row, index);
         const value = 1 + 2 ** index;
         rowValue += value;
       }
@@ -112,9 +170,10 @@ const checkRows = (data: Array<Array<string>>) => {
 
     rowValues.push(rowValue);
   });
+  // console.log('rowValues: ', data[0].length);
 
   // console.log('checking sym', rowValues);
-  return checkSymmetry(rowValues);
+  return checkSymmetry(rowValues, data[0].length);
 };
 
 const convertColumnsToRows = (data: Array<string>) => {
