@@ -3,7 +3,28 @@ import chalk from 'chalk';
 
 export async function day15a(dataPath?: string) {
   const data = await readData(dataPath);
-  return 0;
+  const items = data[0].split(',');
+
+  let total = 0;
+
+  items.forEach((item) => {
+    let index = 0;
+    let answer = 0;
+
+    while (index < item.length) {
+      const charCode = item.charCodeAt(index);
+      answer += charCode;
+      const multiplied = answer * 17;
+      const result = multiplied % 256;
+      answer = result;
+
+      index++;
+    }
+
+    total += answer;
+  });
+
+  return total;
 }
 
 const answer = await day15a();
